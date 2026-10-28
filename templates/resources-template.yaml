@@ -1,0 +1,186 @@
+# Example output of Prompt 1: the resources file you import into the app's course creator.
+# Resources are grouped by type; `topics` on each one tells the course builder what it covers.
+
+version: 1
+subject: "Kubernetes fundamentals"
+learner: "Knows Linux and Docker, never used Kubernetes"
+goal: "Run, expose, configure and debug apps on a local cluster"
+environment: "kind on local Docker, kubectl"
+
+topics:
+  - id: what-is-k8s
+    title: "What Kubernetes is and its architecture"
+    level: beginner
+  - id: local-cluster
+    title: "Local cluster with kind and kubectl"
+    level: beginner
+  - id: pods
+    title: "Pods and their lifecycle"
+    level: beginner
+  - id: deployments
+    title: "Deployments, rollouts and rollbacks"
+    level: beginner
+  - id: troubleshooting
+    title: "Troubleshooting workloads"
+    level: intermediate
+  - id: services
+    title: "Services and Ingress"
+    level: beginner
+  - id: config
+    title: "ConfigMaps and Secrets"
+    level: beginner
+
+resources:
+  videos:
+    - id: nana-k8s-full-course
+      title: "Kubernetes Tutorial for Beginners [FULL COURSE in 4 Hours]"
+      url: https://www.youtube.com/watch?v=X48VuDVv0do
+      author: "TechWorld with Nana"
+      minutes: 240
+      level: beginner
+      topics: [what-is-k8s, pods, deployments, services, config]
+      why: "Clear visual walkthrough of the architecture and every core object."
+
+  playlists: []
+
+  articles:
+    - id: iximiuz-container-path
+      title: "Learning Containers From The Bottom Up"
+      url: https://iximiuz.com/en/posts/container-learning-path/
+      author: "Ivan Velichko"
+      minutes: 20
+      level: beginner
+      topics: [what-is-k8s]
+      why: "Fills gaps in container basics before Kubernetes."
+
+  docs:
+    - id: docs-overview
+      title: "Overview"
+      url: https://kubernetes.io/docs/concepts/overview/
+      author: "kubernetes.io"
+      minutes: 10
+      level: beginner
+      topics: [what-is-k8s]
+      why: "The official one-page answer to 'what is Kubernetes'."
+    - id: docs-components
+      title: "Kubernetes Components"
+      url: https://kubernetes.io/docs/concepts/overview/components/
+      author: "kubernetes.io"
+      minutes: 15
+      level: beginner
+      topics: [what-is-k8s]
+      why: "Control plane vs node components."
+    - id: docs-install-tools
+      title: "Install Tools"
+      url: https://kubernetes.io/docs/tasks/tools/
+      author: "kubernetes.io"
+      minutes: 10
+      level: beginner
+      topics: [local-cluster]
+      why: "Official install links for kubectl and kind."
+    - id: docs-kubectl-reference
+      title: "kubectl Quick Reference"
+      url: https://kubernetes.io/docs/reference/kubectl/quick-reference/
+      author: "kubernetes.io"
+      minutes: 15
+      level: beginner
+      topics: [local-cluster, troubleshooting]
+      why: "The everyday kubectl commands in one page."
+    - id: docs-pods
+      title: "Pods"
+      url: https://kubernetes.io/docs/concepts/workloads/pods/
+      author: "kubernetes.io"
+      minutes: 15
+      level: beginner
+      topics: [pods]
+      why: "The smallest deployable unit."
+    - id: docs-pod-lifecycle
+      title: "Pod Lifecycle"
+      url: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/
+      author: "kubernetes.io"
+      minutes: 20
+      level: beginner
+      topics: [pods, troubleshooting]
+      why: "Phases, restart policy and probes."
+    - id: docs-deployments
+      title: "Deployments"
+      url: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+      author: "kubernetes.io"
+      minutes: 25
+      level: beginner
+      topics: [deployments]
+      why: "Rollouts, rollbacks and scaling."
+    - id: docs-service
+      title: "Service"
+      url: https://kubernetes.io/docs/concepts/services-networking/service/
+      author: "kubernetes.io"
+      minutes: 25
+      level: beginner
+      topics: [services]
+      why: "ClusterIP, NodePort, LoadBalancer and selectors."
+    - id: docs-ingress
+      title: "Ingress"
+      url: https://kubernetes.io/docs/concepts/services-networking/ingress/
+      author: "kubernetes.io"
+      minutes: 15
+      level: intermediate
+      topics: [services]
+      why: "HTTP routing into the cluster."
+    - id: docs-configmap
+      title: "ConfigMaps"
+      url: https://kubernetes.io/docs/concepts/configuration/configmap/
+      author: "kubernetes.io"
+      minutes: 15
+      level: beginner
+      topics: [config]
+      why: "Config as env vars or mounted files."
+    - id: docs-secret
+      title: "Secrets"
+      url: https://kubernetes.io/docs/concepts/configuration/secret/
+      author: "kubernetes.io"
+      minutes: 15
+      level: beginner
+      topics: [config]
+      why: "And why base64 is not encryption."
+
+  guides:
+    - id: kind-quickstart
+      title: "kind Quick Start"
+      url: https://kind.sigs.k8s.io/docs/user/quick-start/
+      author: "kind.sigs.k8s.io"
+      minutes: 20
+      level: beginner
+      topics: [local-cluster]
+      why: "Create, configure and delete local clusters."
+    - id: learnk8s-troubleshooting
+      title: "A visual guide on troubleshooting Kubernetes deployments"
+      url: https://learnk8s.io/troubleshooting-deployments
+      author: "learnk8s"
+      minutes: 30
+      level: intermediate
+      topics: [troubleshooting]
+      why: "The flowchart to follow when a Pod won't start."
+
+  tutorials:
+    - id: k8s-basics-tutorial
+      title: "Learn Kubernetes Basics"
+      url: https://kubernetes.io/docs/tutorials/kubernetes-basics/
+      author: "kubernetes.io"
+      minutes: 45
+      level: beginner
+      topics: [deployments, services]
+      why: "Guided create, expose, scale and update walkthrough."
+
+  tools:
+    - id: killercoda-playground
+      title: "Killercoda Kubernetes playground"
+      url: https://killercoda.com/playgrounds/scenario/kubernetes
+      author: "Killercoda"
+      minutes: 0
+      level: beginner
+      topics: [local-cluster]
+      why: "A throwaway browser cluster when your local one is broken."
+
+  books: []
+
+gaps: []

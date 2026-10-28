@@ -1,0 +1,505 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProjectStatus {
+  ACTIVE
+  PAUSED
+  DONE
+  ARCHIVED
+}
+
+enum LoopStage {
+  PAIN
+  BUILD
+  BREAK
+  EXPLAIN
+  DONE
+}
+
+enum NoteType {
+  NOTE
+  EXPLAIN_IT
+}
+
+enum ArtifactStatus {
+  IDEA
+  DRAFT
+  PUBLISHED
+}
+
+enum ArtifactKind {
+  BLOG_POST
+  DIAGRAM
+  README
+  SOCIAL_POST
+  TALK
+  OTHER
+}
+
+enum Bottleneck {
+  TIME
+  ENERGY
+  FOCUS
+  TUTORIAL_HELL
+  STUCK_ON_CONCEPT
+  TOOL_FOMO
+  ENVIRONMENT_ISSUES
+  OTHER
+}
+
+enum ReadingStatus {
+  UNREAD
+  READ
+  ARCHIVED
+}
+
+model Project {
+  id             String          @id @default(cuid())
+  name           String
+  description    String? // markdown
+  goal           String? // what "done" looks like
+  repoUrl        String?
+  status         ProjectStatus   @default(PAUSED)
+  // The AI mentor's own notes on this project (done, next, decisions, struggles), markdown.
+  // Rewritten after each mentor conversation; the user can edit it.
+  mentorMemory   String?
+  mentorMemoryAt DateTime?
+  mentorMessages MentorMessage[]
+  topics         Topic[]
+  sessions       Session[]
+  notes          Note[]
+  postmortems    Postmortem[]
+  files          FileAsset[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model Topic {
+  id           String             @id @default(cuid())
+  projectId    String
+  project      Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  stage        LoopStage          @default(PAIN)
+  position     Int // ordering within a column
+  stageHistory TopicStageChange[]
+  sessions     Session[]
+  notes        Note[]
+  postmortems  Postmortem[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  // Generated column (see migration 0005_search_vectors); never written by the app.
+  searchVector Unsupported("tsvector")?
+
+  @@index([projectId, stage, position])
+  @@index([searchVector], type: Gin)
+}
+
+model TopicStageChange {
+  id        String    @id @default(cuid())
+  topicId   String
+  topic     Topic     @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  from      LoopStage
+  to        LoopStage
+  changedAt DateTime  @default(now())
+
+  @@index([topicId])
+}
+
+model Session {
+  id             String     @id @default(cuid())
+  projectId      String?
+  project        Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  topicId        String?
+  topic          Topic?     @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  startedAt      DateTime
+  endedAt        DateTime?
+  durationMin    Int? // computed on stop; editable
+  stage          LoopStage? // which loop step this session was
+  summary        String? // what I did
+  producedOutput Boolean    @default(false)
+  outputLink     String? // commit URL, note link, etc.
+  nextStep       String? // REQUIRED when ending a session
+  createdAt      DateTime   @default(now())
+
+  @@index([startedAt])
+  @@index([endedAt])
+}
+
+model Note {
+  id           String                   @id @default(cuid())
+  title        String
+  content      String // markdown
+  type         NoteType                 @default(NOTE)
+  projectId    String?
+  project      Project?                 @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  topicId      String?
+  topic        Topic?                   @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  tags         Tag[]
+  files        FileAsset[]
+  artifacts    Artifact[]
+  flashcards   Flashcard[]
+  pinned       Boolean                  @default(false)
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+  // Generated column (see migration 0001_init); never written by the app.
+  searchVector Unsupported("tsvector")?
+
+  @@index([searchVector], type: Gin)
+}
+
+model Postmortem {
+  id                String                   @id @default(cuid())
+  title             String
+  occurredAt        DateTime                 @default(now())
+  whatBroke         String
+  symptoms          String
+  investigation     String // how I found the cause
+  rootCause         String
+  fix               String
+  lessons           String
+  wasDeliberate     Boolean                  @default(false) // true if from a chaos experiment
+  projectId         String?
+  project           Project?                 @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  topicId           String?
+  topic             Topic?                   @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  chaosExperimentId String?
+  chaosExperiment   ChaosExperiment?         @relation(fields: [chaosExperimentId], references: [id], onDelete: SetNull)
+  files             FileAsset[]
+  tags              Tag[]
+  artifacts         Artifact[]
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  // Generated column (see migration 0005_search_vectors); never written by the app.
+  searchVector      Unsupported("tsvector")?
+
+  @@index([searchVector], type: Gin)
+}
+
+model ChaosExperiment {
+  id          String       @id @default(cuid())
+  title       String // e.g. "Kill the DB container mid-write"
+  description String? // how to do it
+  hypothesis  String? // what I expect to happen
+  difficulty  Int          @default(1) // 1-3
+  category    String? // containers, networking, storage, k8s, ci, security...
+  completedAt DateTime?
+  postmortems Postmortem[]
+  createdAt   DateTime     @default(now())
+}
+
+model WeeklyRetro {
+  id           String     @id @default(cuid())
+  weekStart    DateTime   @unique // Monday 00:00 in TZ
+  shipped      String // what did I ship?
+  slowedDown   String // what slowed me down?
+  bottleneck   Bottleneck
+  nextWeekGoal String // one goal for next week
+  energy       Int? // 1-5 self rating
+  createdAt    DateTime   @default(now())
+}
+
+model ReadingItem {
+  id           String                   @id @default(cuid())
+  url          String
+  title        String?
+  source       String? // domain, auto-filled
+  status       ReadingStatus            @default(UNREAD)
+  takeaway     String? // one-line takeaway when marked read
+  tags         Tag[]
+  createdAt    DateTime                 @default(now())
+  readAt       DateTime?
+  // Generated column (see migration 0005_search_vectors); never written by the app.
+  searchVector Unsupported("tsvector")?
+
+  @@index([searchVector], type: Gin)
+}
+
+model Artifact {
+  id                 String         @id @default(cuid())
+  title              String
+  kind               ArtifactKind
+  status             ArtifactStatus @default(IDEA)
+  url                String?
+  notes              String?
+  targetMonth        DateTime // first day of month it's intended for
+  publishedAt        DateTime?
+  // Set when promoted from a postmortem or explain-it note.
+  sourceNoteId       String?
+  sourceNote         Note?          @relation(fields: [sourceNoteId], references: [id], onDelete: SetNull)
+  sourcePostmortemId String?
+  sourcePostmortem   Postmortem?    @relation(fields: [sourcePostmortemId], references: [id], onDelete: SetNull)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@index([targetMonth])
+}
+
+model WorkObservation {
+  id           String                   @id @default(cuid())
+  content      String // what I noticed at my job
+  question     String? // question to ask a colleague
+  resolved     Boolean                  @default(false)
+  answer       String?
+  tags         Tag[]
+  createdAt    DateTime                 @default(now())
+  // Generated column (see migration 0005_search_vectors); never written by the app.
+  searchVector Unsupported("tsvector")?
+
+  @@index([searchVector], type: Gin)
+}
+
+model FileAsset {
+  id           String       @id @default(cuid())
+  originalName String
+  storedName   String // uuid-based filename on disk
+  mimeType     String
+  sizeBytes    Int
+  projectId    String?
+  project      Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  notes        Note[]
+  postmortems  Postmortem[]
+  createdAt    DateTime     @default(now())
+}
+
+model Tag {
+  id               String            @id @default(cuid())
+  name             String            @unique
+  notes            Note[]
+  postmortems      Postmortem[]
+  readingItems     ReadingItem[]
+  workObservations WorkObservation[]
+}
+
+model Flashcard {
+  id          String   @id @default(cuid())
+  front       String
+  back        String
+  noteId      String? // source note (made from a note, or generated)
+  note        Note?    @relation(fields: [noteId], references: [id], onDelete: SetNull)
+  // SM-2 spaced repetition fields
+  easeFactor  Float    @default(2.5)
+  interval    Int      @default(0) // days
+  repetitions Int      @default(0)
+  dueAt       DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([dueAt])
+  @@index([noteId])
+}
+
+model Setting {
+  key   String @id
+  value String
+}
+
+enum RoadmapStepStatus {
+  TODO
+  DOING
+  DONE
+}
+
+enum ResourceOrigin {
+  SEARCH // picked by the AI from web search results
+  AI // suggested by the AI without web search
+  MANUAL // added by hand
+}
+
+enum ResourceKind {
+  DOCS
+  ARTICLE
+  VIDEO
+  COURSE
+  BOOK
+  INTERACTIVE
+  REPO
+  OTHER
+}
+
+// A learning roadmap generated by the AI from a prompt: stages → steps → resources.
+model Roadmap {
+  id        String         @id @default(cuid())
+  title     String
+  summary   String?
+  prompt    String // what it was generated from
+  stages    RoadmapStage[]
+  edits     RoadmapEdit[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model RoadmapStage {
+  id          String        @id @default(cuid())
+  roadmapId   String
+  roadmap     Roadmap       @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  position    Int
+  title       String
+  description String?
+  steps       RoadmapStep[]
+
+  @@index([roadmapId, position])
+}
+
+model RoadmapStep {
+  id          String            @id @default(cuid())
+  stageId     String
+  stage       RoadmapStage      @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  position    Int
+  title       String
+  description String?
+  practice    String? // a hands-on exercise
+  status      RoadmapStepStatus @default(TODO)
+  resources   RoadmapResource[]
+
+  @@index([stageId, position])
+}
+
+model RoadmapResource {
+  id        String         @id @default(cuid())
+  stepId    String
+  step      RoadmapStep    @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  position  Int
+  title     String
+  url       String
+  kind      ResourceKind   @default(OTHER)
+  note      String? // why it's useful
+  origin    ResourceOrigin @default(MANUAL)
+  createdAt DateTime       @default(now())
+
+  @@index([stepId, position])
+}
+
+// One prompt that changed a roadmap, with the AI's summary of what it did.
+model RoadmapEdit {
+  id          String   @id @default(cuid())
+  roadmapId   String
+  roadmap     Roadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  instruction String
+  scope       String? // step title, when the edit was about one step
+  summary     String
+  createdAt   DateTime @default(now())
+
+  @@index([roadmapId, createdAt])
+}
+
+enum MentorRole {
+  USER
+  MENTOR
+}
+
+// One message in a project's conversation with the AI mentor.
+model MentorMessage {
+  id        String     @id @default(cuid())
+  projectId String
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  role      MentorRole
+  content   String
+  solution  Boolean    @default(false) // the user explicitly asked for the full solution
+  createdAt DateTime   @default(now())
+
+  @@index([projectId, createdAt])
+}
+
+// --- Courses: built from a resources file gathered outside the app (see templates/).
+
+enum CourseItemType {
+  VIDEO
+  PLAYLIST
+  ARTICLE
+  DOCS
+  GUIDE
+  TUTORIAL
+  TOOL
+  BOOK
+  OTHER
+}
+
+enum CourseBuild {
+  AI // arranged by Gemini
+  TOPICS // grouped by topic, no AI
+}
+
+model Course {
+  id            String         @id @default(cuid())
+  title         String
+  description   String?
+  level         String?
+  outcomes      String[]
+  subject       String // from the resources file
+  source        String // the resources file as imported (YAML or JSON), so it can be rebuilt
+  build         CourseBuild    @default(AI)
+  weeklyMinutes Int?
+  focus         String?
+  gaps          String[] // topics the file or the AI found no good resource for
+  unused        String[] // titles of resources the AI left out
+  modules       CourseModule[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model CourseModule {
+  id          String             @id @default(cuid())
+  courseId    String
+  course      Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  position    Int
+  title       String
+  goal        String?
+  items       CourseItem[]
+  practice    CoursePractice[]
+  checkpoints CourseCheckpoint[]
+
+  @@index([courseId, position])
+}
+
+model CourseItem {
+  id          String         @id @default(cuid())
+  moduleId    String
+  module      CourseModule   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  position    Int
+  resourceKey String // the resource's id in the file; progress follows it across rebuilds
+  type        CourseItemType @default(OTHER)
+  title       String
+  url         String
+  author      String?
+  minutes     Int?
+  required    Boolean        @default(true)
+  why         String?
+  sections    String[]
+  startSec    Int? // only this part of a video
+  endSec      Int?
+  doneAt      DateTime?
+
+  @@index([moduleId, position])
+}
+
+model CoursePractice {
+  id       String       @id @default(cuid())
+  moduleId String
+  module   CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  position Int
+  stage    LoopStage    @default(BUILD)
+  task     String
+  doneWhen String?
+  doneAt   DateTime?
+
+  @@index([moduleId, position])
+}
+
+model CourseCheckpoint {
+  id       String       @id @default(cuid())
+  moduleId String
+  module   CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  position Int
+  question String
+  answer   String
+
+  @@index([moduleId, position])
+}

@@ -1,0 +1,249 @@
+# studee-budee course template (format version 1)
+#
+# One file = one course. Fill it with your subscription AI, then import it in the app.
+#
+# Rules:
+#   - Every `id` must be unique within the file and should never change once you
+#     start the course: re-importing matches items by id, so your progress is kept.
+#   - Lists can be as long as you like: add as many modules, items, practice tasks
+#     and checkpoint questions as the course needs.
+#   - Fields marked (optional) can be left out.
+#
+# Item types: article | video | playlist | docs | guide | tutorial | course | book | tool | other
+
+version: 1
+
+course:
+  id: k8s-fundamentals
+  title: "Kubernetes Fundamentals"
+  description: "From what a container orchestrator is to running and debugging apps on a local kind cluster."
+  level: beginner                 # beginner | intermediate | advanced
+  language: en                    # (optional)
+  prerequisites:                  # (optional) free text, shown on the course page
+    - "Comfortable on the Linux command line"
+    - "Can build and run a Docker container"
+  outcomes:                       # (optional) what you can do at the end
+    - "Run a local Kubernetes cluster with kind"
+    - "Deploy, expose and configure an app with Deployments, Services and ConfigMaps"
+    - "Debug a crashing Pod with kubectl"
+  environment: "kind on local Docker, kubectl"   # (optional) where practice tasks run, no VMs
+  tags: [kubernetes, containers, cka]
+
+modules:
+  # ───────────────────────────────────────────── Module 1
+  - id: m1-intro
+    title: "What Kubernetes is and why it exists"
+    goal: "Explain the problem Kubernetes solves and name its main components."
+    items:
+      - id: m1-overview-docs
+        type: docs
+        title: "Overview — Kubernetes docs"
+        url: https://kubernetes.io/docs/concepts/overview/
+        minutes: 10
+        required: true
+        why: "The official one-page answer to 'what is Kubernetes'."
+
+      - id: m1-components-docs
+        type: docs
+        title: "Kubernetes Components"
+        url: https://kubernetes.io/docs/concepts/overview/components/
+        minutes: 15
+        required: true
+        why: "Control plane vs nodes; you will meet every component again later."
+        sections: ["Control plane components", "Node components"]   # (optional) what to focus on
+
+      - id: m1-nana-full-course
+        type: video
+        title: "Kubernetes Tutorial for Beginners (TechWorld with Nana)"
+        url: https://www.youtube.com/watch?v=X48VuDVv0do
+        start: "0:00"             # (optional) only watch this part
+        end: "35:00"
+        minutes: 35
+        required: true
+        why: "Clear visual walkthrough of the architecture and core objects."
+
+      - id: m1-container-learning-path
+        type: article
+        title: "Learning Containers From The Bottom Up (iximiuz)"
+        url: https://iximiuz.com/en/posts/container-learning-path/
+        minutes: 20
+        required: false           # optional items show as "extra" and don't block completion
+        why: "Fills gaps in container basics if Kubernetes feels too abstract."
+
+    practice:
+      - id: m1-p1
+        task: "Draw the Kubernetes architecture from memory: control plane components, node components, and how a request flows."
+        done_when: "Your drawing matches the components page without looking."
+
+    checkpoint:
+      - q: "Which component decides which node a new Pod runs on?"
+        a: "kube-scheduler."
+      - q: "Where does Kubernetes store all cluster state?"
+        a: "etcd."
+      - q: "What runs on every node and makes sure containers in Pods are running?"
+        a: "The kubelet."
+
+  # ───────────────────────────────────────────── Module 2
+  - id: m2-setup
+    title: "A local cluster with kind and kubectl"
+    goal: "Have a working cluster on your machine and know the kubectl basics."
+    items:
+      - id: m2-install-tools
+        type: docs
+        title: "Install Tools (kubectl, kind)"
+        url: https://kubernetes.io/docs/tasks/tools/
+        minutes: 10
+        required: true
+        why: "Official install links for kubectl and kind."
+
+      - id: m2-kind-quickstart
+        type: guide
+        title: "kind Quick Start"
+        url: https://kind.sigs.k8s.io/docs/user/quick-start/
+        minutes: 20
+        required: true
+        why: "Create, list and delete clusters; multi-node config."
+
+      - id: m2-kubectl-cheatsheet
+        type: docs
+        title: "kubectl Quick Reference"
+        url: https://kubernetes.io/docs/reference/kubectl/quick-reference/
+        minutes: 15
+        required: true
+        why: "Keep it open; the commands you'll use every day."
+
+      - id: m2-k8s-basics-tutorial
+        type: tutorial
+        title: "Learn Kubernetes Basics (interactive tutorial)"
+        url: https://kubernetes.io/docs/tutorials/kubernetes-basics/
+        minutes: 45
+        required: false
+        why: "Guided walkthrough of create, deploy, explore, expose, scale, update."
+
+    practice:
+      - id: m2-p1
+        task: "Create a 3-node kind cluster (1 control plane, 2 workers) from a config file."
+        done_when: "kubectl get nodes shows 3 nodes in Ready state."
+      - id: m2-p2
+        task: "Delete the cluster and recreate it with one command."
+        done_when: "You can do it without looking at the docs."
+
+    checkpoint:
+      - q: "Which file does kubectl read to know which cluster to talk to?"
+        a: "The kubeconfig, by default ~/.kube/config."
+      - q: "How do you see every resource type the cluster knows about?"
+        a: "kubectl api-resources."
+
+  # ───────────────────────────────────────────── Module 3
+  - id: m3-workloads
+    title: "Pods and Deployments"
+    goal: "Run an app as a Deployment, scale it, roll it out and roll it back."
+    items:
+      - id: m3-pods-docs
+        type: docs
+        title: "Pods"
+        url: https://kubernetes.io/docs/concepts/workloads/pods/
+        minutes: 15
+        required: true
+        why: "The smallest unit you deploy; everything else builds on it."
+
+      - id: m3-pod-lifecycle
+        type: docs
+        title: "Pod Lifecycle"
+        url: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/
+        minutes: 20
+        required: true
+        why: "Phases, restart policy and probes: the key to reading kubectl output."
+        sections: ["Pod phase", "Container restart policy", "Container probes"]
+
+      - id: m3-deployments-docs
+        type: docs
+        title: "Deployments"
+        url: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+        minutes: 25
+        required: true
+        why: "Rollouts, rollbacks and scaling."
+        sections: ["Creating a Deployment", "Updating a Deployment", "Rolling Back a Deployment"]
+
+      - id: m3-troubleshooting-guide
+        type: guide
+        title: "A visual guide on troubleshooting Kubernetes deployments (learnk8s)"
+        url: https://learnk8s.io/troubleshooting-deployments
+        minutes: 30
+        required: true
+        why: "The flowchart to follow when a Pod won't start."
+
+    practice:
+      - id: m3-p1
+        task: "Deploy nginx with 3 replicas, then update the image to a new tag and watch the rollout."
+        done_when: "kubectl rollout status reports success and all Pods run the new tag."
+      - id: m3-p2
+        task: "Break it: update the image to a tag that doesn't exist. Find the error, then roll back."
+        done_when: "You can name the Pod status and the event that show the failure."
+
+    checkpoint:
+      - q: "What does a Deployment create to manage its Pods?"
+        a: "A ReplicaSet."
+      - q: "A Pod shows ImagePullBackOff. What is the most likely cause?"
+        a: "The image name or tag is wrong, or the registry needs credentials."
+      - q: "Which command undoes the last rollout?"
+        a: "kubectl rollout undo deployment/<name>."
+
+  # ───────────────────────────────────────────── Module 4
+  - id: m4-networking-config
+    title: "Services and configuration"
+    goal: "Expose an app inside and outside the cluster and configure it without rebuilding the image."
+    items:
+      - id: m4-services-docs
+        type: docs
+        title: "Service"
+        url: https://kubernetes.io/docs/concepts/services-networking/service/
+        minutes: 25
+        required: true
+        why: "ClusterIP, NodePort and LoadBalancer, and how selectors find Pods."
+
+      - id: m4-ingress-docs
+        type: docs
+        title: "Ingress"
+        url: https://kubernetes.io/docs/concepts/services-networking/ingress/
+        minutes: 15
+        required: false
+        why: "HTTP routing into the cluster; useful for a homelab later."
+
+      - id: m4-configmap-docs
+        type: docs
+        title: "ConfigMaps"
+        url: https://kubernetes.io/docs/concepts/configuration/configmap/
+        minutes: 15
+        required: true
+        why: "Inject config as env vars or files."
+
+      - id: m4-secret-docs
+        type: docs
+        title: "Secrets"
+        url: https://kubernetes.io/docs/concepts/configuration/secret/
+        minutes: 15
+        required: true
+        why: "And why base64 is not encryption."
+
+      - id: m4-playground
+        type: tool
+        title: "Killercoda Kubernetes playground"
+        url: https://killercoda.com/playgrounds/scenario/kubernetes
+        minutes: 0                # 0 or left out = no time estimate
+        required: false
+        why: "A throwaway browser cluster when your local one is broken."
+
+    practice:
+      - id: m4-p1
+        task: "Expose your nginx Deployment with a ClusterIP Service and reach it from another Pod with curl."
+        done_when: "curl from a debug Pod returns the nginx welcome page."
+      - id: m4-p2
+        task: "Move a setting into a ConfigMap, mount it as a file, change it and restart the Deployment."
+        done_when: "The Pod sees the new value without rebuilding the image."
+
+    checkpoint:
+      - q: "How does a Service know which Pods to send traffic to?"
+        a: "Its label selector matches Pod labels."
+      - q: "Is data in a Secret encrypted by default?"
+        a: "No, it is only base64-encoded unless encryption at rest is configured."
