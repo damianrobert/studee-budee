@@ -57,7 +57,7 @@ docker compose exec -T db pg_restore -U studee -d studee --clean --if-exists --n
 docker compose start app
 ```
 
-Use your `POSTGRES_USER` / `POSTGRES_DB` values if you changed them. Note that database dumps don't include uploaded files; back up the `uploads` volume separately, or use the in-app export below.
+Use your `POSTGRES_USER` / `POSTGRES_DB` values if you changed them. Note that database dumps don't include uploaded files; back up the `uploads` volume separately, or use the in-app export below. See [RESTORE.md](RESTORE.md) for the full restore procedures.
 
 ## Export and import
 
